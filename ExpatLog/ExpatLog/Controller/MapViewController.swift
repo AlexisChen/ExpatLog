@@ -9,13 +9,13 @@
 import UIKit
 import Mapbox
 
-class MapViewController: UIViewController, MGLMapViewDelegate {
-    
-    @IBOutlet weak var mapCellButton: UIButton!
+class MapViewController: UIViewController, MGLMapViewDelegate, MarkersModelDelegate {
     
     var mapView :MGLMapView!
     var mapCellView :MapCalloutView!
     var userToken :String!
+    var markersModel = MarkersModel.sharedInstance
+    var currentAnnotation :LocationMarker?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,7 +32,7 @@ class MapViewController: UIViewController, MGLMapViewDelegate {
         //set delegate for annotation
         mapView.delegate = self
         mapView.showsUserLocation = true
-
+        markersModel.delegate = self;
     }
     
     //delegate functions
@@ -45,23 +45,34 @@ class MapViewController: UIViewController, MGLMapViewDelegate {
     }
     
     func mapView(_ mapView: MGLMapView, calloutViewFor annotation: MGLAnnotation) -> MGLCalloutView? {
+        //set currentAnnotation
+        currentAnnotation = annotation as? LocationMarker
         mapCellView =  MapCalloutView(representedObject: annotation)
         mapCellView.cellButton.addTarget(self, action: #selector(pushDetailVC), for: .touchUpInside)
-//        mapCellView.cellButton = self.mapCellButton
+        mapCellView.cellTitle.text = currentAnnotation?.title
+        mapCellView.cellImageView.image = currentAnnotation?.image
         return mapCellView
     }
     
-    func mapView(_ mapView: MGLMapView, tapOnCalloutFor annotation: MGLAnnotation) {
-        print("finally found you ")
-    }
+//    func mapView(_ mapView: MGLMapView, tapOnCalloutFor annotation: MGLAnnotation) {
+//        print("finally found you ")
+//    }
  
+    func addAnnotations(_ annotations: [LocationMarker]) {
+        mapView.addAnnotations(annotations)
+    }
+    
     //override function
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if let detailVC = segue.destination as? DetailViewController {
-            detailVC.completionHandler = {(title: String?, description: String?, image: UIImage?) in
+            detailVC.currentAnnotation = self.currentAnnotation
+            detailVC.completionHandler = {(title: String?, description: String?, image: UIImage?, imageUpdated: Bool) in
                 if let title=title, let description = description, let image = image {
                     //add to model
-                    
+                    self.currentAnnotation?.title = title
+                    self.currentAnnotation?.imgDescription = description
+                    self.currentAnnotation?.image = image
+                    self.markersModel.updateMarker(marker: self.currentAnnotation!, imageUpdated:imageUpdated)
                     //update view
                     self.mapCellView.cellTitle.text = title
                     self.mapCellView.cellImageView.image = image
@@ -76,16 +87,17 @@ class MapViewController: UIViewController, MGLMapViewDelegate {
         let touchLocation = sender.location(in: view)
         let locationCoordinate = mapView.convert(touchLocation, toCoordinateFrom: mapView)
         //create annotation, add to view and model
-        let newAnnotation = MGLPointAnnotation()
+        let newAnnotation = LocationMarker()
+        newAnnotation.annotationUID = UUID().uuidString
         newAnnotation.coordinate = CLLocationCoordinate2D(latitude: locationCoordinate.latitude, longitude: locationCoordinate.longitude)
         newAnnotation.title = "New location marked!"
         newAnnotation.subtitle = "Tap to edit details"
+        markersModel.addMarker(newMarker: newAnnotation)
         mapView.addAnnotation(newAnnotation)
     }
     //helper objc functions
     @objc func pushDetailVC() {
-        mapCellButton.sendActions(for: .touchUpInside)
-        print("push detail vc")
+        self.performSegue(withIdentifier: "MapToDetailSegue", sender: self)
     }
     
 }

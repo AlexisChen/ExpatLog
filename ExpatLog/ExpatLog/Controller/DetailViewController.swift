@@ -10,18 +10,21 @@ import UIKit
 
 class DetailViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
 
-    typealias DetailCompletionHandler = (String?, String?, UIImage?)->Void
+    typealias DetailCompletionHandler = (String?, String?, UIImage?, Bool)->Void
     var completionHandler: DetailCompletionHandler?
-    
+    var imageUpdated:Bool = false;
+    var currentAnnotation:LocationMarker?
     @IBOutlet weak var addImageButton: UIButton!
     @IBOutlet weak var detailImageView: UIImageView!
     @IBOutlet weak var detailTitleTextField: UITextField!
-    @IBOutlet weak var detaIlDesTextView: UITextView!
+    @IBOutlet weak var detailDesTextView: UITextView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+        detailImageView.image = currentAnnotation?.image
+        detailTitleTextField.text = currentAnnotation?.title
+        detailDesTextView.text = currentAnnotation?.imgDescription
+//         Do any additional setup after loading the view.
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
@@ -33,14 +36,15 @@ class DetailViewController: UIViewController, UIImagePickerControllerDelegate, U
         
         detailImageView.image = image
         addImageButton.isHidden = true;
+        imageUpdated = true;
         
         self.dismiss(animated: true, completion: nil)
     }
     
-    @IBAction func doneButtonClicked(_ sender: UIButton) {
+    @IBAction func saveButtonClicked(_ sender: UIButton) {
         self.dismiss(animated: true, completion: nil)
         if let completionHandler = completionHandler {
-            completionHandler(detailTitleTextField.text, detaIlDesTextView.text, detailImageView.image)
+            completionHandler(detailTitleTextField.text, detailDesTextView.text, detailImageView.image, imageUpdated)
         }
     }
     
@@ -86,9 +90,7 @@ class DetailViewController: UIViewController, UIImagePickerControllerDelegate, U
             cameraPicker.sourceType = .camera
             self.present(cameraPicker, animated: true, completion: nil)
         } else {
-            
             print("Can not take picture")
-            
         }
     }
     
