@@ -8,23 +8,63 @@
 
 import UIKit
 
-class DetailViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+class DetailViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, PostDetailDelegate, DropdownViewDelegate {
 
     typealias DetailCompletionHandler = (String?, String?, UIImage?, Bool)->Void
     var completionHandler: DetailCompletionHandler?
     var imageUpdated:Bool = false;
-    var currentAnnotation:LocationMarker?
+    var currentAnnotation:LocationMarker!
+    var userToken: String!
+    var collectionsModel = CollectionsModel.sharedInstance
+    var isInCollection = false
+    
     @IBOutlet weak var addImageButton: UIButton!
     @IBOutlet weak var detailImageView: UIImageView!
     @IBOutlet weak var detailTitleTextField: UITextField!
     @IBOutlet weak var detailDesTextView: UITextView!
+    @IBOutlet weak var addToCollectionImageView: UIImageView!
+    var collectionIconButton: addToCollectionButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        detailImageView.image = currentAnnotation?.image
-        detailTitleTextField.text = currentAnnotation?.title
-        detailDesTextView.text = currentAnnotation?.imgDescription
-//         Do any additional setup after loading the view.
+        detailImageView.image = currentAnnotation.image
+        detailTitleTextField.text = currentAnnotation.title
+        detailDesTextView.text = currentAnnotation.imgDescription
+        //place the addToCollectionButton
+        collectionIconButton = addToCollectionButton.init(frame: CGRect(x: 0, y: 0, width: 0, height: 0))
+        collectionIconButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        self.view.addSubview(collectionIconButton)
+        collectionIconButton.centerXAnchor.constraint(equalTo: addToCollectionImageView.centerXAnchor).isActive = true
+        collectionIconButton.centerYAnchor.constraint(equalTo: addToCollectionImageView.centerYAnchor).isActive = true
+        
+        collectionIconButton.topAnchor.constraint(equalTo: addToCollectionImageView.topAnchor).isActive = true
+        collectionIconButton.leftAnchor.constraint(equalTo: addToCollectionImageView.leftAnchor).isActive = true
+        collectionIconButton.dropView.dropdownViewDelegate = self
+//        myFirstButton.addTarget(self, action: ), forControlEvents: .TouchUpInside)
+        updateInCollection()
+        collectionIconButton.addTarget(self, action: #selector(addToCollectionButtonClicked), for: .touchUpInside)
+        collectionsModel.postdetailDelegate = self
+    }
+    
+    // MARK: - Delegate
+    func updateInCollection() {
+        isInCollection = collectionsModel.markerInCollections(inMarker: currentAnnotation.annotationUID)
+        //get list of collection names
+        let collectionNames = collectionsModel.getCollectionNames()
+        collectionIconButton.popDropView(collections: collectionNames)
+        updateInCollectionImage()
+    }
+    
+    func collectionSelected(atIndex index: Int) {
+        //update UIImage change status
+        isInCollection = true
+        updateInCollectionImage()
+        //add current annotation to selected collection
+        collectionsModel.addMarkerToCollection(markerID: currentAnnotation.annotationUID, collectionAt: index)
+        //dismiss dropview
+        collectionIconButton.dismissDropDown()
+        
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
@@ -39,6 +79,15 @@ class DetailViewController: UIViewController, UIImagePickerControllerDelegate, U
         imageUpdated = true;
         
         self.dismiss(animated: true, completion: nil)
+    }
+    
+    // MARK: - IBAction
+    
+    @objc func addToCollectionButtonClicked() {
+        //only works if not incollection
+        if !isInCollection {
+            collectionIconButton.presentDropView()
+        }
     }
     
     @IBAction func saveButtonClicked(_ sender: UIButton) {
@@ -73,6 +122,15 @@ class DetailViewController: UIViewController, UIImagePickerControllerDelegate, U
     }
     
     //helper functions
+    
+    private func updateInCollectionImage() {
+        if !isInCollection {
+            addToCollectionImageView.image =  #imageLiteral(resourceName: "StarEmpty")
+        } else {
+            addToCollectionImageView.image = #imageLiteral(resourceName: "StarFilled")
+        }
+    }
+    
     func initPhotoPicker(){
         let photoPicker =  UIImagePickerController()
         photoPicker.delegate = self
@@ -102,4 +160,6 @@ class DetailViewController: UIViewController, UIImagePickerControllerDelegate, U
             print("Save Success")
         }
     }
+    
+    
 }

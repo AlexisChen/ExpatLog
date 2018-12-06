@@ -19,7 +19,7 @@ class MapViewController: UIViewController, MGLMapViewDelegate, MarkersModelDeleg
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        userToken = markersModel.userToken
         mapView = MGLMapView(frame: view.bounds)
         
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -66,6 +66,7 @@ class MapViewController: UIViewController, MGLMapViewDelegate, MarkersModelDeleg
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if let detailVC = segue.destination as? DetailViewController {
             detailVC.currentAnnotation = self.currentAnnotation
+            CollectionsModel.sharedInstance.loadCollections(userToken: userToken)
             detailVC.completionHandler = {(title: String?, description: String?, image: UIImage?, imageUpdated: Bool) in
                 if let title=title, let description = description, let image = image {
                     //add to model
