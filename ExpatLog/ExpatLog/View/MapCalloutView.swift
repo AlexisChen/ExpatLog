@@ -62,7 +62,7 @@ class MapCalloutView: UIView, MGLCalloutView {
         super.init(frame: .zero)
         
         backgroundColor = .darkGray
-        cellImageView.frame = CGRect(x:10, y:10, width:150, height:150)
+        cellImageView.frame = CGRect(x:5, y:5, width:160, height:160)
         cellTitle.text = "New location marked!"
         cellButton.setTitle("Click to add more details", for: .normal)
         addSubview(cellImageView)
